@@ -37,10 +37,13 @@ router.post('/upload', function(req, res, next){
                var hair_data = new Hairshop({
                   shop_name: fields.shop_name,
                   address: fields.address,
+                  latitude: fields.latitude,
+                  longitude: fields.longitude,
                   station: fields.station,
                   business_hour: fields.business_hour,
                   tel: fields.tel,
-                  $push: { price : price_data }, //배열은 push로
+                  price : price_data,
+                  //$push: { price : price_data }, //배열은 push로
                   shoppic_url: data.Location
                });
                hair_data.save(function(err, row) {

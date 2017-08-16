@@ -10,6 +10,8 @@ autoIncrement.initialize(db);
 var HairshopSchema = Schema({
 	shop_name: String,
 	address: String,
+	latitude: Number,
+	longitude: Number,
 	station: String,
 	business_hour: String,
 	tel: String,
