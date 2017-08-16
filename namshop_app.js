@@ -46,7 +46,7 @@ app.use(function(err, req, res, next) {
   res.render('error');
 });
 
-app.listen(3000); //or 80
+app.listen(80); //or 80
 console.log("server started at port 3000!!");
 
 module.exports = app;
