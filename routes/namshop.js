@@ -4,11 +4,24 @@ var Hairshop = require('../models/hairshop');
 var formidable = require('formidable');
 var AWS = require('aws-sdk');
 var s3 = new AWS.S3();
+
 /* GET home page. */
 router.get('/', function(req, res, next) {
   res.render('index', {title: '남자들의 헤어#'});
 });
 
+//첫화면
+router.get('/home', function(req, res, next){
+   //res.render('home', {title: 'Home'});
+   Hairshop.find({}, function(err, docs){
+      res.json({
+         successcode:1,
+         shoplists: docs
+      });
+   });
+});
+
+/////////////////////////////////////////////////////////////////////
 //hairshop DB 저장페이지 <1>
 router.get('/load', function(req, res, next) {
   res.render('loadpage', {title: 'Hairshop DB loading page'});
