@@ -15,7 +15,7 @@ var HairshopSchema = Schema({
 	station: String,
 	business_hour: String,
 	tel: String,
-	price: [{cut:String, color:String, perm:String}],
+	price: [{cut:Number, color:Number, perm:Number}],
 	shoppic_url: String,
 	shoppic_thumbnail_url: String,
 	hairpic_url: [String],
