@@ -13,6 +13,59 @@ router.get('/', function(req, res, next) {
   res.render('index', {title: '남자들의 헤어#'});
 });
 
+router.get('/dummyhome', function(req, res, next){
+   res.json({  successcode:1,
+      shoplists:[{
+         shop_name: "제오헤어",
+         address: "서울특별시 관악구 남부순환로 1600",
+         latitude: 37.483684,
+         longitude: 126.928521,
+         station: "신림",
+         business_hour: "평일 10:30~21:30 주말 10:00~21:00" ,
+         tel: "02-877-3591",
+         price: [{cut:25000, color:59500, perm:112000}],
+         shoppic_url: "https://s3.ap-northeast-2.amazonaws.com/namshop/%EC%8B%A0%EB%A6%BC%EB%9D%BC%EB%B9%88%ED%97%A4%EC%96%B4_%EC%8B%9C%EC%84%A4.JPG",
+         hairpic_url : [
+             "https://s3.ap-northeast-2.amazonaws.com/namshop/%EC%8B%A0%EB%A6%BC%EB%9D%BC%EB%B9%88%ED%97%A4%EC%96%B4_1.JPG",
+             "https://s3.ap-northeast-2.amazonaws.com/namshop/%EC%8B%A0%EB%A6%BC%EB%9D%BC%EB%B9%88%ED%97%A4%EC%96%B4_2.JPG",
+             "https://s3.ap-northeast-2.amazonaws.com/namshop/%EC%8B%A0%EB%A6%BC%EB%9D%BC%EB%B9%88%ED%97%A4%EC%96%B4_3.JPG"
+         ],
+         hairpic_thumbnail_url: [
+             "https://s3.ap-northeast-2.amazonaws.com/namshop/1503031836878.jpg",
+             "https://s3.ap-northeast-2.amazonaws.com/namshop/1503031845329.jpg",
+             "https://s3.ap-northeast-2.amazonaws.com/namshop/1503031853748.jpg"],
+         review: [{review_no:1, nickname:"진영", star_score:5, Date:"2017-08-09", hashtag:{hash1:"#좋아요", hash2:"#좋아요", hash3:"#재방문"}},
+         {review_no:2, nickname:"형우", star_score:3, Date:"2017-08-10", hashtag:{hash1:"#좋아요", hash2:"#뚝배기", hash3:"#깨졌다"}},
+         {review_no:3, nickname:"종형", star_score:3, Date:"2017-08-12", hashtag:{hash1:"#좋아요", hash2:"#뚝배기", hash3:"#깨졌다"}}],
+         hash_rank: [{"rank1": "#친절한", "rank2": "#재방문", "rank3": "#무난한", "rank4": "#만족"}]
+   },
+   {
+         shop_name: "라빈헤어",
+         address: "서울특별시 관악구 남부순환로 1590 2층, 신림역 4번출구 근처",
+         latitude: 37.483636,
+         longitude: 126.927342,
+         station: "신림",
+         business_hour: "화~토 11:00~03:00 일,월 15:00~03:00" ,
+         tel: "010-4891-7975",
+         price: [{cut:20000, color:60000, perm:30000}],
+         shoppic_url: "https://s3.ap-northeast-2.amazonaws.com/namshop/%EC%8B%A0%EB%A6%BC%EB%9D%BC%EB%B9%88%ED%97%A4%EC%96%B4_%EC%8B%9C%EC%84%A4.JPG",
+         hairpic_url : [
+            "https://s3.ap-northeast-2.amazonaws.com/namshop/%EC%8B%A0%EB%A6%BC%EB%9D%BC%EB%B9%88%ED%97%A4%EC%96%B4_1.JPG",
+            "https://s3.ap-northeast-2.amazonaws.com/namshop/%EC%8B%A0%EB%A6%BC%EB%9D%BC%EB%B9%88%ED%97%A4%EC%96%B4_2.JPG",
+            "https://s3.ap-northeast-2.amazonaws.com/namshop/%EC%8B%A0%EB%A6%BC%EB%9D%BC%EB%B9%88%ED%97%A4%EC%96%B4_3.JPG"
+         ],
+         hairpic_thumbnail_url: [
+             "https://s3.ap-northeast-2.amazonaws.com/namshop/1503031836878.jpg",
+             "https://s3.ap-northeast-2.amazonaws.com/namshop/1503031845329.jpg",
+             "https://s3.ap-northeast-2.amazonaws.com/namshop/1503031853748.jpg"],
+         review: [{review_no:1, nickname:"진영", star_score:5, Date:"2017-08-09", hashtag:{hash1:"#좋아요", hash2:"#좋아요", hash3:"#재방문"}},
+         {review_no:2, nickname:"형우", star_score:3, Date:"2017-08-10", hashtag:{hash1:"#좋아요", hash2:"#뚝배기", hash3:"#깨졌다"}},
+         {review_no:3, nickname:"종형", star_score:3, Date:"2017-08-12", hashtag:{hash1:"#좋아요", hash2:"#뚝배기", hash3:"#깨졌다"}}],
+         hash_rank: [{"rank1": "#친절한", "rank2": "#재방문", "rank3": "#무난한", "rank4": "#만족"}]
+   }
+   ]});
+})
+
 //첫화면
 router.get('/home', function(req, res, next){
    //res.render('home', {title: 'Home'});
