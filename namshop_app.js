@@ -46,8 +46,8 @@ app.use(function(err, req, res, next) {
   res.render('error');
 });
 
-app.listen(80);
-console.log("server started at port 80!!");
+app.listen(8080);
+console.log("server started at port 8080!!");
 
 module.exports = app;
 
