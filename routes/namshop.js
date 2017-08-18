@@ -1,9 +1,12 @@
+var request = require('request');
 var express = require('express');
 var router = express.Router();
 var Hairshop = require('../models/hairshop');
 var formidable = require('formidable');
 var AWS = require('aws-sdk');
 var s3 = new AWS.S3();
+var gm = require('gm');
+var mime = require('mime');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -77,16 +80,18 @@ router.get('/load_imgonly', function(req, res, next) {
 
 router.post('/load_imgonly', function(req, res, next){
       var form = new formidable.IncomingForm();
+      var tmp_img;
 
       form.parse(req, function(err, fields, files) { //fields는 file제외한 나머지
-         console.log('fields=', fields);
-         console.log('files=', files);
+         //console.log('fields=', fields);
+         //console.log('files=', files);
          var params = {
             Bucket: 'namshop',
             Key: files.userfile.name,
             ACL:'public-read',
             Body: require('fs').createReadStream(files.userfile.path)
          };
+         console.log('params= ', params);
 
       Hairshop.findOne({shop_name:fields.shop_name}, function(err, shopdata){
          if(shopdata){
@@ -95,14 +100,33 @@ router.post('/load_imgonly', function(req, res, next){
                      console.log('err=', err);
                   }
                   else {
-                     var tmp_img = data.Location;
+                     //console.log('데이터: ', data);
+                     tmp_img = data.Location;
+                     console.log('tempimg=', tmp_img);
 
                      Hairshop.update({shop_name:fields.shop_name}, {$push: {"hairpic_url": tmp_img}}, function(err, docs){
                         if(err) console.log('err=', err);
                         console.log(docs);
                         //res.json({docs});
-                        res.send('<script>alert("추가 이미지 업로드 성공");location.href="/namshop"</script>');
                      });
+                     var thumbnail = Date.now().toString() + ".jpg";
+                     console.log('thumb=', thumbnail);
+                     console.log('url=', tmp_img);
+
+                     gm(request(tmp_img), thumbnail).resize(294,294).stream(function(err, stdout, stderr){
+                           var data = {
+                              Bucket: 'namshop',
+                              Key: thumbnail,
+                              ACL:'public-read',
+                              Body: stdout,
+                              ContentType: mime.lookup(thumbnail)
+                           };
+
+                           s3.upload(data, function(err, res){
+                              console.log("done");
+                           });
+                     });
+                     res.send('<script>alert("추가 이미지 업로드 성공");location.href="/namshop"</script>');
                   }
             });
          }
@@ -112,4 +136,6 @@ router.post('/load_imgonly', function(req, res, next){
       });
    });
 });
+
+
 module.exports = router;
