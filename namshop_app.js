@@ -5,6 +5,7 @@ var logger = require('morgan');
 var cookieParser = require('cookie-parser');
 var bodyParser = require('body-parser');
 var compression = require('compression');
+var session = require('express-session');
 
 var index = require('./routes/index');
 var users = require('./routes/users');
@@ -23,6 +24,13 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+
+app.use(session({
+	secret: 'mysecret',
+	resave: false,  // 저장하지 않겠다
+	saveUninitialized: false, // 로그인용도의경우 false 로그인한 상태에서만 세션을 쓰겠다
+}));
+
 
 app.use('/', index);
 app.use('/users', users);

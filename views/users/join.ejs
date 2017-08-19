@@ -11,11 +11,17 @@
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
 
         <!-- Latest compiled and minified JavaScript -->
-        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8w
-        GNIcPD7Txa" crossorigin="anonymous"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
   </head>
   <body>
-    <h1><%= title %></h1><br>
-    <a href="/namshop">첫화면으로 돌아가기</a><br>
+    <h1><%= title %></h1>
+    <form action="/users/join" class="form-group" method="post">
+        <label for="label">이메일</label>
+        <input type="text" name="email" class="form-control"><br>
+        <label for="label">비밀번호</label>
+        <input type="text" name="pw" class="form-control"><br>
+        <input type="submit" class="btn btn-primary" value="가입">
+        <input type="reset" class="btn btn-primary" value="취소">
+    </form>
   </body>
 </html>
