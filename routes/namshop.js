@@ -15,6 +15,15 @@ router.get('/', function(req, res, next) {
   res.render('index', {title: '남자들의 헤어#'});
 });
 
+router.get('/shoplists/:shop_no', function(req, res, next){
+   var shop_no = req.params.shop_no;
+
+   Hairshop.findOne({shop_no:shop_no}, function(err, shop_data){
+      console.log("shop=", shop_data);
+      res.json({hairshop:shop_data});
+   });
+});
+
 //첫화면
 router.get('/home', function(req, res, next){
    //res.render('home', {title: 'Home'});
@@ -50,19 +59,19 @@ router.get('/home/search/:station', function(req, res, next){
       });
 });
 
-//8.헤어샵 상세정보
-router.get('/:shop_no', function(req, res, next){
+//8.헤어샵 상세정보 http://localhost/namshop/shoplists/1
+router.get('/shoplists/:shop_no', function(req, res, next){
    var shop_no = req.params.shop_no;
 
-   Hairshop.findOne({shop_no: shop_no}, function(err, shop_data){
+   Hairshop.findOne({shop_no:shop_no}, function(err, shop_data){
       console.log("shop=", shop_data);
-      res.json({hairshop: shop_data});
+      res.json({hairshop:shop_data});
    });
 });
 
 //10.헤어샵 예약하기
-// /namshop/3/1/2017-09-08
-router.post('/:shop_no/:user_no/:date', function(req, res, next){
+// localhost/namshop/shoplists/1/res/2/2017-09-20
+router.post('/shoplists/:shop_no/res/:user_no/:date', function(req, res, next){
    var shop_no = req.params.shop_no;
    var user_no = req.params.user_no;
    var date = req.params.date;
@@ -87,8 +96,7 @@ router.post('/:shop_no/:user_no/:date', function(req, res, next){
 });
 
 
-
-//추가된거-스탬프 쓰기 버튼.
+//추가된거-스탬프 받기 버튼.
 
 /////////////////////////////////////////////////////////////////////
 //////////////////////hairshop DB 저장페이지 <1>/////////////////////
@@ -189,8 +197,13 @@ router.post('/load_imgonly', function(req, res, next){
                               ContentType: mime.lookup(thumbnail)
                            };
 
-                           s3.upload(data, function(err, res){
+                           s3.upload(data, function(err, thumbdata){
                               console.log("done");
+                              Hairshop.update({shop_name:fields.shop_name}, {$push: {"hairpic_thumbnail_url": thumbdata.Location}}, function(err, docs){
+                                 if(err) console.log('err=', err);
+                                 console.log(docs);
+                                 //res.json({docs});
+                              });
                            });
                      });
                      res.send('<script>alert("추가 이미지 업로드 성공");location.href="/namshop"</script>');

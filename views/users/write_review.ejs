@@ -15,17 +15,17 @@
   </head>
   <body>
     <h1><%= title %></h1>
-    <form action="/users/<%= user_no %>/reservationlist/<%= res_no %>" class="form-group" method="post" enctype="multipart/form-data">
-        <label for="label">닉네임</label>
-        <input type="text" name="nickname" class="form-control"><br>
+    <form action="/users/<%= user_no %>/res_list/<%= res_no %>/write" class="form-group" method="post" enctype="multipart/form-data">
         <label for="label">별점</label>
-        <input type="text" name="star_score" class="form-control"><br>
+        <input type="text" name="star" class="form-control"><br>
         <label for="label">해시태그1</label>
         <input type="text" name="hash_1" class="form-control"><br>
         <label for="label">해시태그2</label>
         <input type="text" name="hash_2" class="form-control"><br>
         <label for="label">후기사진</label>
         <input type="file" name="userfile" class="form-control"><br>
+        <label for="label">날짜</label>
+        <input type="date" name="reg_date" class="form-control"><br>
         <input type="submit" class="btn btn-primary" value="작성">
         <input type="reset" class="btn btn-primary" value="취소">
     </form>
