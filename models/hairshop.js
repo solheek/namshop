@@ -20,18 +20,19 @@ var HairshopSchema = Schema({
 	shoppic_url: String,
 	hairpic_url: [String],
 	hairpic_thumbnail_url: [String],
-	hash_cnt: [{1: {type: Number, default: 0},
-				2: {type: Number, default: 0},
-				3: {type: Number, default: 0},
-				4: {type: Number, default: 0},
-				5: {type: Number, default: 0},
-				6: {type: Number, default: 0},
-				7: {type: Number, default: 0},
-				8: {type: Number, default: 0}}],
-	hash_rank: [{1: {type: Number, default: 0},
-				 2: {type: Number, default: 0},
-				 3: {type: Number, default: 0},
-				 4: {type: Number, default: 0}}]
+	star_score: {type:Number, default:0}
+	// hash_cnt: [{1: {type: Number, default: 0},
+	// 			2: {type: Number, default: 0},
+	// 			3: {type: Number, default: 0},
+	// 			4: {type: Number, default: 0},
+	// 			5: {type: Number, default: 0},
+	// 			6: {type: Number, default: 0},
+	// 			7: {type: Number, default: 0},
+	// 			8: {type: Number, default: 0}}],
+	// hash_rank: [{1: {type: Number, default: 0},
+	// 			 2: {type: Number, default: 0},
+	// 			 3: {type: Number, default: 0},
+	// 			 4: {type: Number, default: 0}}]
 });
 
 //SHOP_NO: PK

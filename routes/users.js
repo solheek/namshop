@@ -161,14 +161,29 @@ router.post('/:user_no/res_list/:res_no/write', function(req, res, next) {
 	                          		reg_date: fields.reg_date
 	                           }
 
-	                           Reservation.update({res_no:res_no}, {review: review_data}, function(err, resdoc){
+	                           //예약번호 찾아서 해당테이블에 리뷰 넣어줌
+	                           Reservation.findOneAndUpdate({res_no:res_no}, {review: review_data, rv_posted:true}, function(err, revdoc){
 	                               if(err) console.log('err=', err);
-	                               console.log(resdoc);
-
-	                               User.update({user_no:user_no},{$inc:{stamp: 5}},function(err, userdoc){
+	                               console.log('*******uploading review=', revdoc);
+	                               //리뷰 작성한 유저찾아서 스탬프 5개줌
+	                               User.update({user_no:user_no},{$inc:{stamp: 5}}, function(err, userdoc){
 	                               		if(err) console.log('err=', err);
-	                               		console.log(userdoc);
-	                               })
+	                               		console.log('********increasing stamp=', userdoc);
+	                               });
+		                           Reservation.aggregate([
+		                           		{$match:{shop_no:revdoc.shop_no, rv_posted:true}},
+		                               	{$group: {"_id": "$shop_no", average: {$avg:"$review.star"}}}
+		                               	], function(err, docs){
+		                               		if(err) console.log('err=',err);
+		                               		//docs[0].average 평균
+		                               		//docs[0]._id 샵번호
+		                               		console.log('제대로좀나와라..;짜증나니까 이거 평균별점임: ',docs);
+
+		                               		Hairshop.findOneAndUpdate({shop_no:docs[0]._id}, {star_score:docs[0].average}, function(err, starupdated_doc){
+		                               			if(err) console.log('err=', err);
+		                               			console.log('별점이 업뎃됐어요: ', starupdated_doc);
+		                               		});
+		                               	});
 	                               res.json({success_code: 1});
 	                           });
 	                        });
@@ -182,12 +197,4 @@ router.post('/:user_no/res_list/:res_no/write', function(req, res, next) {
 	   });
 	});
 });
-
-///////////////////////////
-	// Reservation.update({res_no: res_no, user_no:user_no}, {review:review_data},function(err, doc){
-	// 	if(err) console.log(err);
-	// 	console.log('doc=',doc);
-	// 	res.json({success_code:1, result:doc});
-	// });
-////////////////////////////
 module.exports = router;

@@ -13,6 +13,7 @@ var ReservationSchema = Schema({
 	name: String,
 	address: String,
 	res_date: Date,
+	rv_posted: {type:Boolean, default: false},
 	review: ReviewSchema
 });
 
