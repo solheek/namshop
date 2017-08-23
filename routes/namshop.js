@@ -82,7 +82,7 @@ router.post('/shoplists/:shop_no/res/:user_no/:date', function(req, res, next){
       var res_data = {
          user_no: user_no,
          shop_no: shop_no,
-         name: name,
+         shop_name: name,
          address: address,
          res_date: date
       };

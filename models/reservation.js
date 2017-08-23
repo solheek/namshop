@@ -10,11 +10,12 @@ autoIncrement.initialize(db);
 var ReservationSchema = Schema({
 	user_no: Number,
 	shop_no: Number,
-	name: String,
+	shop_name: String,
 	address: String,
-	res_date: Date,
+	res_date: String,
 	rv_posted: {type:Boolean, default: false},
-	review: ReviewSchema
+	review: ReviewSchema,
+	rv_del: {type: Boolean, default: false}
 });
 
 //RES_NO: PK

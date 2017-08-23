@@ -8,7 +8,7 @@ var ReviewSchema = Schema({
 	hashtag: [Number],
 	photo_url: String,
 	photo_thumbnail_url: String,
-	reg_date: Date
+	reg_date: String
 });
 
 var Review = db.model('Review', ReviewSchema);
