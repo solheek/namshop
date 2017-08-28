@@ -95,6 +95,7 @@ router.post('/login', function(req, res, next){
 		             result: {
 		             user_no: doc.user_no,
 		             email: doc.email,
+		             stamp: doc.stamp,
 		             nickname: doc.nickname
 		             }
 		         });
