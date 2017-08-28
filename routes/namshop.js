@@ -21,7 +21,7 @@ router.get('/home', function(req, res, next){
 
    Hairshop.find({}, function(err, docs){
       res.json({
-         successcode:1,
+         success_code:1,
          shoplists: docs
       });
    });
@@ -32,10 +32,9 @@ router.get('/home/search/:min/:max', function(req, res, next){
    var min = req.params.min;
    var max = req.params.max;
 
-//해당샵의 리뷰,별점 추가해야됨 ~!
    Hairshop.find({"price.cut":{"$gte":min, "$lt":max}}, "shop_no shop_name address station price.cut shoppic_url", function(err, lists){
-      console.log("shoplists=", lists);
-      res.json({search_lists:lists});
+      console.log("*****searched shoplists=", lists);
+      res.json({success_code:1, search_lists:lists});
    });
 });
 
@@ -106,7 +105,7 @@ router.post('/shoplists/:shop_no/favorite/:user_no', function(req, res, next){
    var user_no = req.params.user_no;
 
    User.findOne({user_no:user_no}, function(err, doc){
-      if(err) res.json({"success_code":0});
+      if(err) res.json({success_code: 0});
       console.log('***favorite hairshop=', doc);
       var a = doc.favorite.indexOf(shop_no);
       if(a == -1) {
@@ -121,6 +120,65 @@ router.post('/shoplists/:shop_no/favorite/:user_no', function(req, res, next){
    });
 });
 
+//21.헤어샵 간단정보 조회
+router.get('/search/info/:shop_no', function(req, res, next){
+   var shop_no = req.params.shop_no;
+
+   req.checkParams('shop_no').isInt();
+
+   var errors = req.validationErrors();
+
+   if(!errors){
+      if(req.session.email){//회원
+         User.findOne({email:req.session.email},"favorite", function(err, userdoc){
+            console.log('****favorite shops=', userdoc);
+            var flag = userdoc.favorite.indexOf(shop_no);
+            console.log('****exist flag=', flag);
+
+            Hairshop.findOne({shop_no:shop_no}, function(err, hairdoc){
+               var arr=[];
+               arr.push(hairdoc.review); //리뷰 개수 알려주려구
+
+               if(flag!=-1) { //해당 헤어샵이 favorite list에 존재
+                  res.json({success_code:1,
+                     info:{shop_no: hairdoc.shop_no,
+                           name: hairdoc.shop_name,
+                           star: hairdoc.star_score,
+                           rev_cnt: arr.length},
+                     message:"좋아요를 한 헤어샵입니다."
+                  });
+               }
+               else{ //favorite list에 존재하지 않음
+                  res.json({success_code:1,
+                     info:{shop_no: hairdoc.shop_no,
+                           name: hairdoc.shop_name,
+                           star: hairdoc.star_score,
+                           rev_cnt: arr.length},
+                     message:"좋아요를 하지 않은 헤어샵입니다."
+                  });
+               }
+            });
+         });
+      }
+      else{ //비회원일시 하트 비어있음
+         Hairshop.findOne({shop_no:shop_no}, function(err, hairdoc){
+         var arr=[];
+         arr.push(hairdoc.review);
+         res.json({success_code:1,
+            info:{shop_no: hairdoc.shop_no,
+                  name: hairdoc.shop_name,
+                  star: hairdoc.star_score,
+                  rev_cnt: arr.length},
+                  message:"비회원입니다."
+            });
+         });
+      }
+   }
+   else{
+      return res.json({success_code: 0, message: "invalid params"});
+   }
+
+});
 
 
 
@@ -248,7 +306,7 @@ router.post('/load_imgonly', function(req, res, next){
 ///////////////////////////////////////////////////////dummyserver!!
 /////////////////////////////////////////////////////////////////////
 router.get('/dummyhome', function(req, res, next){
-   res.json({  successcode:1,
+   res.json({  success_code:1,
       shoplists:[{
          shop_name: "제오헤어",
          address: "서울특별시 관악구 남부순환로 1600",
