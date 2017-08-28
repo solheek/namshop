@@ -130,7 +130,7 @@ router.get('/:user_no/mypage',function(req, res, next){
 	var errors = req.validationErrors();
 
 	if(!errors){
-		User.findOne({user_no: user_no},"nickname stamp userpic_url" ,function(err, user_doc){
+		User.findOne({user_no: user_no},"user_no nickname stamp userpic_url" ,function(err, user_doc){
 			if(user_doc){
 			   console.log('user doc=', user_doc);
 			   res.json({success_code:1, user:user_doc});
