@@ -22,7 +22,7 @@ router.get('/home', function(req, res, next){
    Hairshop.find({}, function(err, docs){
       res.json({
          success_code:1,
-         shoplists: docs
+         shop_lists: docs
       });
    });
 });

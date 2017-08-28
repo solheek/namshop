@@ -166,6 +166,7 @@ router.get('/:user_no/res_list', function(req, res, next) {
 
 //리뷰작성 폼
 //http://localhost/users/2/res_list/1/write
+//지금 html로 설정되어있음 (모바일로 변경해야함)
 //19. 스탬프 받기 버튼 눌렀을 때
 router.get('/:user_no/res_list/:res_no/write', function(req, res, next) {
 	req.checkParams('user_no').isInt();
