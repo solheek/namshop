@@ -15,16 +15,7 @@ router.get('/', function(req, res, next) {
   res.render('index', {title: '남자들의 헤어#'});
 });
 
-router.get('/shoplists/:shop_no', function(req, res, next){
-   var shop_no = req.params.shop_no;
-
-   Hairshop.findOne({shop_no:shop_no}, function(err, shop_data){
-      console.log("shop=", shop_data);
-      res.json({hairshop:shop_data});
-   });
-});
-
-//첫화면
+//테스트화면
 router.get('/home', function(req, res, next){
    //res.render('home', {title: 'Home'});
 
@@ -42,13 +33,13 @@ router.get('/home/search/:min/:max', function(req, res, next){
    var max = req.params.max;
 
 //해당샵의 리뷰,별점 추가해야됨 ~!
-   Hairshop.find({"price.cut":{"$gte":min, "$lt":max}}, "shop_name address station price.cut shoppic_url", function(err, lists){
+   Hairshop.find({"price.cut":{"$gte":min, "$lt":max}}, "shop_no shop_name address station price.cut shoppic_url", function(err, lists){
       console.log("shoplists=", lists);
       res.json({search_lists:lists});
    });
 });
 
-//6. 역 기반
+//6. 역 기반 헤어샵 조회
 router.get('/home/search/:station', function(req, res, next){
    var station = req.params.station;
 
@@ -59,13 +50,27 @@ router.get('/home/search/:station', function(req, res, next){
       });
 });
 
-//8.헤어샵 상세정보 http://localhost/namshop/shoplists/1
+//8.헤어샵 상세정보 조회 http://localhost/namshop/shoplists/1
 router.get('/shoplists/:shop_no', function(req, res, next){
    var shop_no = req.params.shop_no;
 
    Hairshop.findOne({shop_no:shop_no}, function(err, shop_data){
-      console.log("shop=", shop_data);
-      res.json({hairshop:shop_data});
+      console.log("****shop data=", shop_data);
+
+      Reservation.find({shop_no:shop_no, rv_del:false},"review",function(err, rev_data){
+         console.log("***************shop's review data=", rev_data)
+         res.json({hairshop:{shop_data:shop_data, rev_data:rev_data}});
+      })
+   });
+});
+
+//9.헤어샵 전화하기
+router.get('/shoplists/:shop_no/tel', function(req, res, next){
+   var shop_no = req.params.shop_n
+
+   Hairshop.findOne({shop_no:shop_no}, function(err, doc){
+      if(err) res.json({success_code: 0});
+      res.json({success_code:1, tel:doc.tel});
    });
 });
 
@@ -95,8 +100,29 @@ router.post('/shoplists/:shop_no/res/:user_no/:date', function(req, res, next){
    });
 });
 
+//16.관심샵 등록/삭제
+router.post('/shoplists/:shop_no/favorite/:user_no', function(req, res, next){
+   var shop_no = req.params.shop_no;
+   var user_no = req.params.user_no;
 
-//추가된거-스탬프 받기 버튼.
+   User.findOne({user_no:user_no}, function(err, doc){
+      if(err) res.json({"success_code":0});
+      console.log('***favorite hairshop=', doc);
+      var a = doc.favorite.indexOf(shop_no);
+      if(a == -1) {
+         User.findOneAndUpdate({user_no:user_no}, {$push: {"favorite": shop_no}}, function(err, doc){
+               res.json({success_code: 1, message:"관심샵에 등록되었습니다."});
+         });
+      } else {
+         User.findOneAndUpdate({user_no:user_no}, {$pull: {"favorite": shop_no}}, function(err, doc){
+               res.json({success_code: 1, message:"관심샵에서 삭제되었습니다."});
+         });
+      }
+   });
+});
+
+
+
 
 /////////////////////////////////////////////////////////////////////
 //////////////////////hairshop DB 저장페이지 <1>/////////////////////

@@ -8,7 +8,6 @@ var autoIncrement = require('mongoose-auto-increment');
 autoIncrement.initialize(db);
 
 var UserSchema = new Schema({
-   push_id:String,
    pw: String,
    email: String,
    nickname: String,
@@ -16,7 +15,7 @@ var UserSchema = new Schema({
    kakao_token: String,
    stamp: Number,
    userpic_url: String,
-   Favorite_hairshop : [Number]
+   favorite : [Number]
 });
 
 //USER_NO: PK

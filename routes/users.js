@@ -1,5 +1,6 @@
 var request = require('request');
 var express = require('express');
+var async = require('async');
 var router = express.Router();
 var Hairshop = require('../models/hairshop');
 var Reservation = require('../models/reservation');
@@ -111,6 +112,15 @@ router.post('/login', function(req, res, next){
 		console.log('!!!!!!!!login errors=', errors);
 		return res.json({success_code: 0, message: "invalid input value"});
 	}
+});
+
+//4.로그아웃
+router.get('/logout',function(req, res, next){
+   req.session.destroy( function(err){
+      if(err) res.json({success_code: 0});
+      	console.log('logout req.session=',req.session);
+      	res.json({success_code: 1});
+   });
 });
 
 //7. 햄버거 메뉴의 마이페이지 조회
@@ -338,5 +348,50 @@ router.post('/:user_no/res_list/:res_no/read_rev/del', function(req, res, next){
 	}
 });
 
+//18.관심샵 리스트 조회
+router.get('/:user_no/favor_list',function(req,res,next)
+{
+	   req.checkParams('user_no').isInt();
+
+	   var errors = req.validationErrors();
+
+	   if(!errors){
+	   		var user_no = req.params.user_no;
+		    User.findOne({user_no:user_no}, function(err, user){
+		      if(err) res.json({"success_code" : 0});
+		      console.log('userfindOne user=',user);
+		      var arr=[];
+		      async.eachSeries(user.favorite, function(item, callback)
+		         {//헤어샵 no만 나옴
+		            console.log('eachSeries' + item);
+		            Hairshop.findOne({shop_no:item}, function(err, shopdoc)
+		            {
+		               console.log("shopdoc=", shopdoc);
+		               var obj = {
+		                  "shop_no": shopdoc.shop_no,
+		                  "shop_name": shopdoc.shop_name,
+		                  "address": shopdoc.address
+		               };
+		               arr.push(obj);
+		               callback();
+		            });
+		         }, function(err) {
+		            if( err )
+		            {
+		               console.log('A file failed to process');
+		               res.json({"success_code":0});
+		            } else
+		            {
+		               console.log('All files have been processed successfully');
+		               console.log('arr=', arr);
+		               res.json({"success_code":1, "favor_list": arr});
+		            }
+		         });
+		   });
+		}
+		else{
+			return res.json({success_code: 0, message: "invalid params"});
+		}
+});
 
 module.exports = router;
