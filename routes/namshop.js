@@ -27,40 +27,152 @@ router.get('/home', function(req, res, next){
    });
 });
 
-//5. 가격 현위치 기반 헤어샵과 간단정보 조회
-router.get('/home/search/:min/:max', function(req, res, next){
+//5. 가격 현위치 기반 헤어샵과 간단정보 한개 조회
+router.get('/search_loc/:min/:max', function(req, res, next){
    var min = req.params.min;
    var max = req.params.max;
 
-   Hairshop.find({"price.cut":{"$gte":min, "$lt":max}}, "shop_no shop_name address station price.cut shoppic_url", function(err, lists){
-      console.log("*****searched shoplists=", lists);
-      res.json({success_code:1, search_lists:lists});
-   });
+   req.checkParams('min').isInt();
+   req.checkParams('max').isInt();
+
+   var errors = req.validationErrors();
+
+   if(!errors){
+      Hairshop.find({"price.cut":{"$gte":min, "$lt":max}}, "shop_no shop_name address latitude longitude price.cut", function(err, lists){
+         if(lists.length){//검색된 헤어샵 있을 때
+            console.log("*****searched shoplists=", lists);
+            //console.log("첫번째 인덱스 샵", lists[0].shop_no);
+
+            Hairshop.findOne({shop_no:lists[0].shop_no}, function(err, hairdoc){
+               console.log('!!!!!!!!!first doc=', hairdoc);
+                //res.json({hairdoc:hairdoc});
+               Reservation.count({shop_no:lists[0].shop_no, rv_posted:true, rv_del:false}, function(err, revdoc){
+                   //console.log('리뷰개수= ', revdoc);
+                  var shop_info = {
+                     shop_no: hairdoc.shop_no,
+                     shop_name: hairdoc.shop_name,
+                     star_score: hairdoc.star_score,
+                     rev_cnt: revdoc,
+                     shoppic_url: hairdoc.shoppic_url
+                  }
+
+                  if(req.session.email) { //로그인
+                     User.findOne({email:req.session.email}, "favorite",function(err, userdoc){
+                        var flag = userdoc.favorite.indexOf(lists[0].shop_no); //user의 favorite에 해당 샵이 있는지 검사
+
+                        if(flag!=-1){//존재
+                           res.json({success_code: 1,
+                              search_list: lists,
+                              shop_info: shop_info,
+                              message: "관심샵에 추가된 헤어샵입니다."});
+                        }
+                        else{ //존재X
+                           res.json({success_code: 1,
+                              search_list:lists,
+                              shop_info: shop_info,
+                              message: "관심샵에 없는 헤어샵입니다."});
+                         }
+                     });
+                  }
+                  else { //비회원
+                     res.json({success_code: 1,
+                        search_list: lists,
+                        shop_info: shop_info,
+                        message: "비회원입니다."});
+                   }
+                });
+             });
+         }
+         else{ //검색된 헤어샵 없음
+            res.json({success_code:2, message:"해당 가격대 헤어샵 없음"});
+         }
+      });
+   }
+   else{
+      return res.json({success_code: 0, message: "invalid params"});
+   }
 });
 
 //6. 역 기반 헤어샵 조회
-router.get('/home/search/:station', function(req, res, next){
+router.get('/search_st/:station', function(req, res, next){
    var station = req.params.station;
 
-   //해당샵의 리뷰,별점 추가해야됨 ~!
-      Hairshop.find({station: station}, "shop_name address station price.cut shoppic_url", function(err, lists){
+      Hairshop.find({station: station}, "shop_name address latitude longitude station price.cut", function(err, lists){
          console.log("shoplists=", lists);
          res.json({search_lists:lists});
       });
 });
 
 //8.헤어샵 상세정보 조회 http://localhost/namshop/shoplists/1
+//하트, 리뷰개수, 별점
 router.get('/shoplists/:shop_no', function(req, res, next){
    var shop_no = req.params.shop_no;
+   req.checkParams('shop_no').isInt();
 
-   Hairshop.findOne({shop_no:shop_no}, function(err, shop_data){
-      console.log("****shop data=", shop_data);
+   var errors = req.validationErrors();
 
-      Reservation.find({shop_no:shop_no, rv_del:false},"review",function(err, rev_data){
-         console.log("***************shop's review data=", rev_data)
-         res.json({hairshop:{shop_data:shop_data, rev_data:rev_data}});
-      })
-   });
+   if(!errors){
+      Hairshop.findOne({shop_no:shop_no}, "address latitude longitude business_hour station tel  hairpic_thumbnail_url hairpic_url price", function(err, shop_data){
+         console.log("****shop data=", shop_data);
+
+         Reservation.find({shop_no:shop_no, rv_del:false, rv_posted:true},"review", function(err, rev_data){
+
+            //console.log("**rev data len=", rev_data.length);
+            //console.log("***************shop's review data=", rev_data)
+            var shop_no = req.params.shop_no;
+            req.checkParams('shop_no').isInt();
+
+            var errors = req.validationErrors();
+            console.log('shop_no=',shop_no);
+
+            Hairshop.findOne({shop_no:shop_no}, function(err, hairdoc){
+               console.log('!!!!!!!!!doc=', hairdoc);
+               //res.json({hairdoc:hairdoc});
+               Reservation.count({shop_no:shop_no, rv_posted:true, rv_del:false}, function(err, revdoc){
+                  //console.log('리뷰개수= ', revdoc);
+                  var shop_info = {
+                     shop_no: hairdoc.shop_no,
+                     shop_name: hairdoc.shop_name,
+                     star_score: hairdoc.star_score,
+                     rev_cnt: revdoc,
+                     shoppic_url: hairdoc.shoppic_url
+                  }
+
+                  if(req.session.email) { //로그인
+                     User.findOne({email:req.session.email}, "favorite",function(err, userdoc){
+                        var flag = userdoc.favorite.indexOf(shop_no); //user의 favorite에 해당 샵이 있는지 검사
+
+                        if(flag!=-1){//존재
+                           res.json({success_code: 1,
+                              shop_info: shop_info,
+                              shop_data:shop_data,
+                              rev_data:rev_data,
+                              message: "관심샵에 추가된 헤어샵입니다."});
+                        }
+                        else{ //존재X
+                           res.json({success_code: 1,
+                              shop_info: shop_info,
+                              shop_data:shop_data,
+                              rev_data:rev_data,
+                              message: "관심샵에 없는 헤어샵입니다."});
+                        }
+                     });
+                  }
+                  else { //비회원
+                     res.json({success_code: 1,
+                        shop_info: shop_info,
+                        shop_data:shop_data,
+                        rev_data:rev_data,
+                        message: "비회원입니다."});
+                  }
+               });
+            });
+         });
+      });
+   }
+   else{
+      return res.json({success_code: 0, message: "invalid params"});
+   }
 });
 
 //9.헤어샵 전화하기
@@ -120,64 +232,54 @@ router.post('/shoplists/:shop_no/favorite/:user_no', function(req, res, next){
    });
 });
 
-//21.헤어샵 간단정보 조회
-router.get('/search/info/:shop_no', function(req, res, next){
+//21.헤어샵 간단정보 조회(수정)
+router.get('/search_info/:shop_no', function(req, res, next){
    var shop_no = req.params.shop_no;
-
    req.checkParams('shop_no').isInt();
 
    var errors = req.validationErrors();
-
+   console.log('shop_no=',shop_no);
    if(!errors){
-      if(req.session.email){//회원
-         User.findOne({email:req.session.email},"favorite", function(err, userdoc){
-            console.log('****favorite shops=', userdoc);
-            var flag = userdoc.favorite.indexOf(shop_no);
-            console.log('****exist flag=', flag);
+      Hairshop.findOne({shop_no:shop_no}, function(err, hairdoc){
+         console.log('!!!!!!!!!doc=', hairdoc);
+         //res.json({hairdoc:hairdoc});
+         Reservation.count({shop_no:shop_no, rv_posted:true, rv_del:false}, function(err, revdoc){
+            //console.log('리뷰개수= ', revdoc);
+            var shop_info = {
+               shop_no: hairdoc.shop_no,
+               shop_name: hairdoc.shop_name,
+               star_score: hairdoc.star_score,
+               rev_cnt: revdoc,
+               shoppic_url: hairdoc.shoppic_url
+            }
 
-            Hairshop.findOne({shop_no:shop_no}, function(err, hairdoc){
-               var arr=[];
-               arr.push(hairdoc.review); //리뷰 개수 알려주려구
+            if(req.session.email) { //로그인
+               User.findOne({email:req.session.email}, "favorite",function(err, userdoc){
+                  var flag = userdoc.favorite.indexOf(shop_no); //user의 favorite에 해당 샵이 있는지 검사
 
-               if(flag!=-1) { //해당 헤어샵이 favorite list에 존재
-                  res.json({success_code:1,
-                     info:{shop_no: hairdoc.shop_no,
-                           name: hairdoc.shop_name,
-                           star: hairdoc.star_score,
-                           rev_cnt: arr.length},
-                     message:"좋아요를 한 헤어샵입니다."
-                  });
-               }
-               else{ //favorite list에 존재하지 않음
-                  res.json({success_code:1,
-                     info:{shop_no: hairdoc.shop_no,
-                           name: hairdoc.shop_name,
-                           star: hairdoc.star_score,
-                           rev_cnt: arr.length},
-                     message:"좋아요를 하지 않은 헤어샵입니다."
-                  });
-               }
-            });
+                  if(flag!=-1){//존재
+                     res.json({success_code: 1,
+                        shop_info: shop_info,
+                        message: "관심샵에 추가된 헤어샵입니다."});
+                  }
+                  else{ //존재X
+                     res.json({success_code: 1,
+                        shop_info: shop_info,
+                        message: "관심샵에 없는 헤어샵입니다."});
+                  }
+               });
+            }
+            else { //비회원
+               res.json({success_code: 1,
+                  shop_info: shop_info,
+                  message: "비회원입니다."});
+            }
          });
-      }
-      else{ //비회원일시 하트 비어있음
-         Hairshop.findOne({shop_no:shop_no}, function(err, hairdoc){
-         var arr=[];
-         arr.push(hairdoc.review);
-         res.json({success_code:1,
-            info:{shop_no: hairdoc.shop_no,
-                  name: hairdoc.shop_name,
-                  star: hairdoc.star_score,
-                  rev_cnt: arr.length},
-                  message:"비회원입니다."
-            });
-         });
-      }
+      });
    }
    else{
       return res.json({success_code: 0, message: "invalid params"});
    }
-
 });
 
 

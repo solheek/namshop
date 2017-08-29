@@ -68,7 +68,6 @@ router.post('/join', function(req, res, next){
    }
 });
 
-
 //2.로그인
 router.post('/login', function(req, res, next){
    console.log('req.body=',req.body);
@@ -95,8 +94,8 @@ router.post('/login', function(req, res, next){
 		             result: {
 		             user_no: doc.user_no,
 		             email: doc.email,
-		             stamp: doc.stamp,
-		             nickname: doc.nickname
+		             nickname: doc.nickname,
+		             stamp: doc.stamp
 		             }
 		         });
 		      }
@@ -166,7 +165,7 @@ router.get('/:user_no/res_list', function(req, res, next) {
 
 //리뷰작성 폼
 //http://localhost/users/2/res_list/1/write
-//지금 html로 설정되어있음 (모바일로 변경해야함)
+//지금 html로 설정되어있음 (모바일로 변경해야함 )
 //19. 스탬프 받기 버튼 눌렀을 때
 router.get('/:user_no/res_list/:res_no/write', function(req, res, next) {
 	req.checkParams('user_no').isInt();
@@ -253,44 +252,47 @@ router.post('/:user_no/res_list/:res_no/write', function(req, res, next) {
 		                        s3.upload(data, function(err, thumbdata){
 		                           console.log("done");
 
-		                           var review_data = {
-		                           		star: fields.star,
-		                          		hashtag: [fields.hash_1, fields.hash_2],
-		                          		photo_url: tmp_img,
-		                          		photo_thumbnail_url:thumbdata.Location,
-		                          		reg_date: fields.reg_date
-		                           }
-
-		                           //예약번호 찾아서 해당테이블에 리뷰 넣어주고 flag true로 바꿔주기(리뷰 읽기할때 사용할거임)
-		                           Reservation.findOneAndUpdate({res_no:res_no, rv_posted:false, rv_del:false}, {review: review_data, rv_posted:true}, function(err, revdoc){
-		                               if(err) console.log('err=', err);
-		                               console.log('*******uploading review=', revdoc); //////////이미 리뷰 썼으면 null로 나오고 프로그램 중지됨 ..어차피 스탬프 받기 버튼 비활성화되니까 상관없으려나 ?
-		                               //리뷰 작성한 유저찾아서 스탬프 5개줌
-		                               if(revdoc){ //revdoc이 null이 아니면
-			                               User.update({user_no:user_no},{$inc:{stamp: 5}}, function(err, userdoc){
-			                               		if(err) console.log('err=', err);
-			                               		console.log('********increasing stamp=', userdoc);
-			                               });
-				                           Reservation.aggregate([
-				                           		{$match:{shop_no:revdoc.shop_no, rv_posted:true, rv_del:false}},
-				                               	{$group: {"_id": "$shop_no", average: {$avg:"$review.star"}}}
-				                               	], function(err, docs){
-				                               		if(err) console.log('err=',err);
-				                               		//docs[0].average 평균
-				                               		//docs[0]._id 샵번호
-				                               		console.log('제대로좀나와라..;짜증나니까 이거 평균별점임: ',docs);
-
-				                               		Hairshop.findOneAndUpdate({shop_no:docs[0]._id}, {star_score:docs[0].average}, function(err, starupdated_doc){
-				                               			if(err) console.log('err=', err);
-				                               			console.log('별점이 업뎃됐어요: ', starupdated_doc);
-				                               		});
-				                               	});
-			                               res.json({success_code: 1, message:"review registered"});
+		                           User.findOne({user_no:user_no}, "nickname", function(err, doc){
+			                           var review_data = {
+			                           		nickname: doc.nickname,
+			                           		star: fields.star,
+			                          		hashtag: [fields.hash_1, fields.hash_2],
+			                          		photo_url: tmp_img,
+			                          		photo_thumbnail_url:thumbdata.Location,
+			                          		reg_date: fields.reg_date
 			                           }
-			                           else{
-			                           	   res.json({success_code: 0, message:"error!! review is already registered"});
-			                           }
-		                           }); //Reservation.findOneAndUpdate ended
+
+			                           //예약번호 찾아서 해당테이블에 리뷰 넣어주고 flag true로 바꿔주기(리뷰 읽기할때 사용할거임)
+			                           Reservation.findOneAndUpdate({res_no:res_no, rv_posted:false, rv_del:false}, {review: review_data, rv_posted:true}, function(err, revdoc){
+			                               if(err) console.log('err=', err);
+			                               console.log('*******uploading review=', revdoc); //////////이미 리뷰 썼으면 null로 나오고 프로그램 중지됨 ..어차피 스탬프 받기 버튼 비활성화되니까 상관없으려나 ?
+			                               //리뷰 작성한 유저찾아서 스탬프 5개줌
+			                               if(revdoc){ //revdoc이 null이 아니면
+				                               User.update({user_no:user_no},{$inc:{stamp: 5}}, function(err, userdoc){
+				                               		if(err) console.log('err=', err);
+				                               		console.log('********increasing stamp=', userdoc);
+				                               });
+					                           Reservation.aggregate([
+					                           		{$match:{shop_no:revdoc.shop_no, rv_posted:true, rv_del:false}},
+					                               	{$group: {"_id": "$shop_no", average: {$avg:"$review.star"}}}
+					                               	], function(err, docs){
+					                               		if(err) console.log('err=',err);
+					                               		//docs[0].average 평균
+					                               		//docs[0]._id 샵번호
+					                               		console.log('제대로좀나와라..;짜증나니까 이거 평균별점임: ',docs);
+
+					                               		Hairshop.findOneAndUpdate({shop_no:docs[0]._id}, {star_score:docs[0].average}, function(err, starupdated_doc){
+					                               			if(err) console.log('err=', err);
+					                               			console.log('별점이 업뎃됐어요: ', starupdated_doc);
+					                               		});
+					                               	});
+				                               res.json({success_code: 1, message:"review registered"});
+				                           }
+				                           else{
+				                           	   res.json({success_code: 0, message:"error!! review is already registered"});
+				                           }
+			                           }); //Reservation.findOneAndUpdate ended
+			                        });
 		                        });//s3 upload ended
 		                  });
 		               }

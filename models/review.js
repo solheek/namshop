@@ -4,6 +4,7 @@ var Schema = mongoose.Schema;
 var ObjectId = Schema.ObjectId;
 
 var ReviewSchema = Schema({
+	nickname: String,
 	star: {type: Number, default: 0},
 	hashtag: [Number],
 	photo_url: String,
