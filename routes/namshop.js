@@ -9,6 +9,20 @@ var AWS = require('aws-sdk');
 var s3 = new AWS.S3();
 var gm = require('gm');
 var mime = require('mime');
+var moment = require('moment-timezone');
+
+/* 시간 설정 함수*/
+function regDateTime(){
+    // lang:ko를 등록한다. 한번 지정하면 자동적으로 사용된다.
+    moment.locale('ko', {
+        weekdays: ["일요일","월요일","화요일","수요일","목요일","금요일","토요일"],
+        weekdaysShort: ["일","월","화","수","목","금","토"],
+    });
+
+    var m = moment().tz('Asia/Seoul');
+    var output = m.format("YYYY-MM-DD");
+    return output;
+}
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -27,7 +41,7 @@ router.get('/home', function(req, res, next){
    });
 });
 
-//5. 가격 현위치 기반 헤어샵과 간단정보 한개 조회
+//5. (완료)가격 현위치 기반 헤어샵과 간단정보 한개 조회
 router.get('/search_loc/:min/:max', function(req, res, next){
    var min = req.params.min;
    var max = req.params.max;
@@ -39,6 +53,10 @@ router.get('/search_loc/:min/:max', function(req, res, next){
 
    if(!errors){
       Hairshop.find({"price.cut":{"$gte":min, "$lt":max}}, "shop_no shop_name address latitude longitude price.cut", function(err, lists){
+
+         console.log('리스트 수정=', lists.shop_no);
+
+
          if(lists.length){//검색된 헤어샵 있을 때
             console.log("*****searched shoplists=", lists);
             //console.log("첫번째 인덱스 샵", lists[0].shop_no);
@@ -77,7 +95,7 @@ router.get('/search_loc/:min/:max', function(req, res, next){
                   else { //비회원
                      res.json({success_code: 1,
                         search_list: lists,
-                        shop_info: shop_info,
+                        shop_info: lists,
                         message: "비회원입니다."});
                    }
                 });
@@ -93,18 +111,63 @@ router.get('/search_loc/:min/:max', function(req, res, next){
    }
 });
 
-//6. 역 기반 헤어샵 조회
-router.get('/search_st/:station', function(req, res, next){
-   var station = req.params.station;
+//6. (완료)역 기반 헤어샵과 간단정보 한개 조회
+router.get('/search_st', function(req, res, next){
+   var station = req.query.station;
 
-      Hairshop.find({station: station}, "shop_name address latitude longitude station price.cut", function(err, lists){
-         console.log("shoplists=", lists);
-         res.json({search_lists:lists});
-      });
+   Hairshop.find({station:station}, "shop_no shop_name address latitude longitude price.cut", function(err, lists){
+
+      if(lists.length){//검색된 헤어샵 있을 때
+         console.log("*****searched shoplists=", lists);
+         //console.log("첫번째 인덱스 샵", lists[0].shop_no);
+
+         Hairshop.findOne({shop_no:lists[0].shop_no}, function(err, hairdoc){
+            console.log('!!!!!!!!!first doc=', hairdoc);
+             //res.json({hairdoc:hairdoc});
+            Reservation.count({shop_no:lists[0].shop_no, rv_posted:true, rv_del:false}, function(err, revdoc){
+                //console.log('리뷰개수= ', revdoc);
+               var shop_info = {
+                  shop_no: hairdoc.shop_no,
+                  shop_name: hairdoc.shop_name,
+                  star_score: hairdoc.star_score,
+                  rev_cnt: revdoc,
+                  shoppic_url: hairdoc.shoppic_url
+               }
+
+               if(req.session.email) { //로그인
+                  User.findOne({email:req.session.email}, "favorite", function(err, userdoc){
+                     var flag = userdoc.favorite.indexOf(lists[0].shop_no); //user의 favorite에 해당 샵이 있는지 검사
+
+                     if(flag!=-1){//존재
+                        res.json({success_code: 1,
+                           search_list: lists,
+                           shop_info: shop_info,
+                           message: "관심샵에 추가된 헤어샵입니다."});
+                     }
+                     else{ //존재X
+                        res.json({success_code: 1,
+                           search_list:lists,
+                           shop_info: shop_info,
+                           message: "관심샵에 없는 헤어샵입니다."});
+                      }
+                  });
+               }
+               else { //비회원
+                  res.json({success_code: 1,
+                     search_list: lists,
+                     shop_info: lists,
+                     message: "비회원입니다."});
+                }
+             });
+          });
+      }
+      else{ //검색된 헤어샵 없음
+         res.json({success_code:0});
+      }
+   });
 });
 
-//8.헤어샵 상세정보 조회 http://localhost/namshop/shoplists/1
-//하트, 리뷰개수, 별점
+//8. (완료) 헤어샵 상세정보 조회 http://localhost/namshop/shoplists/1
 router.get('/shoplists/:shop_no', function(req, res, next){
    var shop_no = req.params.shop_no;
    req.checkParams('shop_no').isInt();
@@ -175,9 +238,9 @@ router.get('/shoplists/:shop_no', function(req, res, next){
    }
 });
 
-//9.헤어샵 전화하기
+//9. (완료) 헤어샵 전화하기
 router.get('/shoplists/:shop_no/tel', function(req, res, next){
-   var shop_no = req.params.shop_n
+   var shop_no = req.params.shop_no;
 
    Hairshop.findOne({shop_no:shop_no}, function(err, doc){
       if(err) res.json({success_code: 0});
@@ -185,11 +248,11 @@ router.get('/shoplists/:shop_no/tel', function(req, res, next){
    });
 });
 
-//10.헤어샵 예약하기
-// localhost/namshop/shoplists/1/res/2/2017-09-20
-router.post('/shoplists/:shop_no/res/:user_no/:date', function(req, res, next){
+//10. (완료) 헤어샵 예약하기
+// localhost/namshop/shoplists/1/res
+router.post('/shoplists/:shop_no/reservate', function(req, res, next){
    var shop_no = req.params.shop_no;
-   var user_no = req.params.user_no;
+   var user_no = req.query.user_no;
    var date = req.params.date;
 
    Hairshop.findOne({shop_no: shop_no}, function(err, shop_data){
@@ -200,13 +263,17 @@ router.post('/shoplists/:shop_no/res/:user_no/:date', function(req, res, next){
          shop_no: shop_no,
          shop_name: name,
          address: address,
-         res_date: date
+         res_date: regDateTime()
       };
 
       var reservate = new Reservation(res_data);
       reservate.save(function(err, doc){
+         if(err){
+            console.log('err=', err);
+            return res.json({success_code: 0});
+         }
          console.log('doc=', doc);
-         res.json({success_code: 1, result:doc});
+         res.json({success_code: 1, res_result: doc});
        });
    });
 });
@@ -232,7 +299,7 @@ router.post('/shoplists/:shop_no/favorite/:user_no', function(req, res, next){
    });
 });
 
-//21.헤어샵 간단정보 조회(수정)
+//21. (완료)헤어샵 간단정보 조회
 router.get('/search_info/:shop_no', function(req, res, next){
    var shop_no = req.params.shop_no;
    req.checkParams('shop_no').isInt();

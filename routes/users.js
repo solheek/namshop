@@ -12,6 +12,34 @@ var AWS = require('aws-sdk');
 var s3 = new AWS.S3();
 var gm = require('gm');
 var mime = require('mime');
+var moment = require('moment-timezone');
+var multer = require('multer');
+var multerS3 = require('multer-s3');
+var async = require('async');
+
+var upload2 = multer({
+        storage: multerS3({
+            s3: s3,
+            bucket: 'namshop',
+            key: function (req, file, cb) {
+                console.log(file);
+                cb(null, Date.now().toString() + file.originalname); //use Date.now() for unique file keys
+            }
+        })
+});
+
+/* 시간 설정 함수*/
+function regDateTime(){
+    // lang:ko를 등록한다. 한번 지정하면 자동적으로 사용된다.
+    moment.locale('ko', {
+        weekdays: ["일요일","월요일","화요일","수요일","목요일","금요일","토요일"],
+        weekdaysShort: ["일","월","화","수","목","금","토"],
+    });
+
+    var m = moment().tz('Asia/Seoul');
+    var output = m.format("YYYY-MM-DD");
+    return output;
+}
 
 /* GET users listing. */
 router.get('/', function(req, res, next) {
@@ -22,7 +50,7 @@ router.get('/join', function(req, res, next) {
   res.render('users/join', {title: '회원가입'});
 });
 
-//1. 회원가입
+//1. (완료)회원가입
 router.post('/join', function(req, res, next){
    console.log('req.body=', req.body);
 
@@ -68,7 +96,7 @@ router.post('/join', function(req, res, next){
    }
 });
 
-//2.로그인
+//2. (완료)로그인
 router.post('/login', function(req, res, next){
    console.log('req.body=',req.body);
 
@@ -114,7 +142,7 @@ router.post('/login', function(req, res, next){
 	}
 });
 
-//4.로그아웃
+//4. (완료)로그아웃
 router.get('/logout',function(req, res, next){
    req.session.destroy( function(err){
       if(err) res.json({success_code: 0});
@@ -123,17 +151,17 @@ router.get('/logout',function(req, res, next){
    });
 });
 
-//7. 햄버거 메뉴의 마이페이지 조회
+//7. (완료)햄버거 메뉴의 마이페이지 조회
 router.get('/:user_no/mypage',function(req, res, next){
 	req.checkParams('user_no').isInt();
 	var user_no = req.params.user_no;
 	var errors = req.validationErrors();
 
 	if(!errors){
-		User.findOne({user_no: user_no},"user_no nickname stamp userpic_url" ,function(err, user_doc){
+		User.findOne({user_no: user_no},"user_no nickname email stamp userpic_url" ,function(err, user_doc){
 			if(user_doc){
 			   console.log('user doc=', user_doc);
-			   res.json({success_code:1, user:user_doc});
+			   res.json({success_code:1, mypage:user_doc});
 			}
 			else{
 				res.json({success_code:0, message: "invalid user"});
@@ -145,7 +173,7 @@ router.get('/:user_no/mypage',function(req, res, next){
 	}
 });
 
-//12. 예약 내역 조회
+//12. (완료) 예약 내역 조회
 router.get('/:user_no/res_list', function(req, res, next) {
 	//예약테이블에서 회원번호로 예약리스트 찾아서 JSON으로 보내주기.
 	req.checkParams('user_no').isInt();
@@ -166,148 +194,171 @@ router.get('/:user_no/res_list', function(req, res, next) {
 //리뷰작성 폼
 //http://localhost/users/2/res_list/1/write
 //지금 html로 설정되어있음 (모바일로 변경해야함 )
-//19. 스탬프 받기 버튼 눌렀을 때
-router.get('/:user_no/res_list/:res_no/write', function(req, res, next) {
+//20. 스탬프 받기 버튼 눌렀을 때
+router.get('/:user_no/res_list/write', function(req, res, next) {
 	req.checkParams('user_no').isInt();
-	req.checkParams('res_no').isInt();
+	var user_no = req.params.user_no;
+	var res_no = req.query.res_no;
+	//req.checkParams('res_no').isInt();
 
 	var errors = req.validationErrors();
 
 	if(!errors){
-		var res_no = req.params.res_no;
-
-		Reservation.findOne({res_no:res_no}, function(err, res_doc){
-			var shop_no = res_doc.shop_no;
-			console.log('**************shop_no=', res_doc.shop_no);
-
-			//모바일
-			// Hairshop.findOne({shop_no:shop_no}, "shop_name address", function(err, shop_doc){
-			// 	if(shop_doc)
-			// 		res.json({success_code:1, shop_doc: shop_doc});
-			// 	else
-			// 		res.json({success_code:0});
-			// });
-
-		});
-
-		//html
-		 res.render('users/write_review', { title: '리뷰쓰기',
-		 	user_no:req.params.user_no,
-		 	res_no:req.params.res_no
-		 });
-	}
-	else{
-		return res.json({success_code: 0, message: "invalid params"});
-	}
-});
-
-//13. 헤어샵 리뷰 작성하기
-router.post('/:user_no/res_list/:res_no/write', function(req, res, next) {
-	//예약테이블에서 예약번호로 해당 row찾아서 리뷰컬럼 업뎃
-	var form = new formidable.IncomingForm();
-	req.checkParams('user_no').isInt();
-	req.checkParams('res_no').isInt();
-
-	var errors = req.validationErrors();
-
-	if(!errors){
-		var res_no = req.params.res_no;
-		var user_no = req.params.user_no;
-
-		   form.parse(req, function(err, fields, files) {
-		      //console.log('fields=', fields);
-		      //console.log('files=', files);
-		      var params = {
-		         Bucket: 'namshop',
-		         Key: files.userfile.name,
-		         ACL:'public-read',
-		         Body: require('fs').createReadStream(files.userfile.path)
-		      };
-		      console.log('params= ', params);
-
-		   Reservation.findOne({res_no:res_no}, function(err, resdata){
-		      if(resdata){
-		            s3.upload(params, function(err, data) {
-		               if(err) {
-		                  console.log('err=', err);
-		               }
-		               else {
-		                  //console.log('데이터: ', data);
-		                  tmp_img = data.Location;
-		                  console.log('tmp_img=', tmp_img);
-
-		                  var thumbnail = Date.now().toString() + ".jpg";
-		                  console.log('thumb=', thumbnail);
-		                  console.log('url=', tmp_img);
-
-		                  gm(request(tmp_img), thumbnail).resize(111,111).stream(function(err, stdout, stderr){
-		                        var data = {
-		                           Bucket: 'namshop',
-		                           Key: thumbnail,
-		                           ACL:'public-read',
-		                           Body: stdout,
-		                           ContentType: mime.lookup(thumbnail)
-		                        };
-
-		                        s3.upload(data, function(err, thumbdata){
-		                           console.log("done");
-
-		                           User.findOne({user_no:user_no}, "nickname", function(err, doc){
-			                           var review_data = {
-			                           		nickname: doc.nickname,
-			                           		star: fields.star,
-			                          		hashtag: [fields.hash_1, fields.hash_2],
-			                          		photo_url: tmp_img,
-			                          		photo_thumbnail_url:thumbdata.Location,
-			                          		reg_date: fields.reg_date
-			                           }
-
-			                           //예약번호 찾아서 해당테이블에 리뷰 넣어주고 flag true로 바꿔주기(리뷰 읽기할때 사용할거임)
-			                           Reservation.findOneAndUpdate({res_no:res_no, rv_posted:false, rv_del:false}, {review: review_data, rv_posted:true}, function(err, revdoc){
-			                               if(err) console.log('err=', err);
-			                               console.log('*******uploading review=', revdoc); //////////이미 리뷰 썼으면 null로 나오고 프로그램 중지됨 ..어차피 스탬프 받기 버튼 비활성화되니까 상관없으려나 ?
-			                               //리뷰 작성한 유저찾아서 스탬프 5개줌
-			                               if(revdoc){ //revdoc이 null이 아니면
-				                               User.update({user_no:user_no},{$inc:{stamp: 5}}, function(err, userdoc){
-				                               		if(err) console.log('err=', err);
-				                               		console.log('********increasing stamp=', userdoc);
-				                               });
-					                           Reservation.aggregate([
-					                           		{$match:{shop_no:revdoc.shop_no, rv_posted:true, rv_del:false}},
-					                               	{$group: {"_id": "$shop_no", average: {$avg:"$review.star"}}}
-					                               	], function(err, docs){
-					                               		if(err) console.log('err=',err);
-					                               		//docs[0].average 평균
-					                               		//docs[0]._id 샵번호
-					                               		console.log('제대로좀나와라..;짜증나니까 이거 평균별점임: ',docs);
-
-					                               		Hairshop.findOneAndUpdate({shop_no:docs[0]._id}, {star_score:docs[0].average}, function(err, starupdated_doc){
-					                               			if(err) console.log('err=', err);
-					                               			console.log('별점이 업뎃됐어요: ', starupdated_doc);
-					                               		});
-					                               	});
-				                               res.json({success_code: 1, message:"review registered"});
-				                           }
-				                           else{
-				                           	   res.json({success_code: 0, message:"error!! review is already registered"});
-				                           }
-			                           }); //Reservation.findOneAndUpdate ended
-			                        });
-		                        });//s3 upload ended
-		                  });
-		               }
-		         });
-		      }
-		      else{
-		         res.json({success_code: 0});
-		      }
-		   }); ///reservation.findOne
+		Reservation.findOne({user_no:user_no, res_no:res_no}, function(err, res_doc){
+			if(res_doc){ //해당 유저의 예약 존재하지 않을때 검사
+				var shop_no = res_doc.shop_no;
+				console.log('**************shop_no=', res_doc.shop_no);
+				//모바일
+				Hairshop.findOne({shop_no:shop_no}, "shop_no shop_name address", function(err, shop_doc){
+					if(shop_doc)
+						res.json({success_code:1, shop_info: shop_doc});
+					else
+						res.json({success_code:0});
+				});
+			}
+			else{
+				res.json({success_code:0});
+			}
 		});
 	}
 	else{
 		return res.json({success_code: 0, message: "invalid params"});
 	}
 });
+
+//13.리뷰 작성하기 (완료)
+router.post('/:user_no/res_list/write', upload2.single('userfile'), function(req, res, next) {
+	var data = {
+		user_no: parseInt(req.params.user_no),
+		res_no: req.body.res_no,
+		shop_no: null,
+		star_score: null,
+		nickname: req.session.email.split('@')[0],
+		star: req.body.star, //review data
+		hashtag: [req.body.hash_1, req.body.hash_2], //review data
+		reg_date: regDateTime(),
+		uploadedFile: null,
+		photo_url: null,
+		thumbnail_Filename: null, //썸네일 파일 이름
+		photo_thumbnail_url: null
+	};
+
+	if(req.file){
+		data.thumbnail_Filename = req.file.originalname.split('.')[0] + "_thumbnail.jpg";
+		data.photo_url = req.file.location;
+	}
+
+	console.log('*************req.file=', req.file);
+
+	async.waterfall([
+		async.constant(data),
+		writeReview,
+		giveStamp,
+		scoreCalculate,
+		scoreUpdate,
+		uploadThumbnail,
+		updatePhotoUrl
+		], function(err, result){
+			if(err){
+				res.json({success_code: 0});
+			}
+			if(result){
+				res.json({success_code:1, message: "review is registered"});
+			}
+		});
+});
+
+function writeReview(data, callback){
+	var rev_data = {
+		nickname: data.nickname,
+		star: data.star,
+		hashtag: data.hashtag,
+		reg_date: data.reg_date
+	};
+
+	//console.log(rev_data);
+
+	Reservation.findOneAndUpdate({res_no:data.res_no, rv_posted:false, rv_del:false}, {review:rev_data, rv_posted:true}, function(err, doc){
+		if(err){
+			console.log(doc);
+			return callback(err);
+		} else {
+			data.shop_no = doc.shop_no;
+			return callback(null, data);
+		}
+	});
+};
+
+function giveStamp(data, callback){
+	User.update({user_no:data.user_no}, {$inc:{stamp:5}}, function(err, doc){
+		if(err){
+			return callback(err);
+		} else {
+			return callback(null, data);
+		}
+	});
+};
+
+function scoreCalculate(data, callback){
+	Reservation.aggregate([
+	{$match:{shop_no:data.shop_no, rv_posted:true, rv_del:false}},
+	{$group: {"_id": "$data.shop_no", average: {$avg:"$review.star"}}}], function(err, doc){
+
+	    if(err){
+	    	return callback(err);
+	    } else {
+	    	data.star_score = doc[0].average;
+	    	return callback(null, data);
+	    }
+	});
+};
+
+function scoreUpdate(data, callback){
+	Hairshop.findOneAndUpdate({shop_no:data.shop_no}, {star_score:data.star_score}, function(err, doc){
+
+		if(err){
+			return callback(err);
+		} else {
+			console.log('*****리뷰와 별점 업데이트 완료!');
+			return callback(null, data);
+		}
+	});
+};
+
+function uploadThumbnail(data, callback){
+	gm(request(data.photo_url), data.thumbnail_Filename).resize(294,294).stream(function(err, stdout, stderr){
+	      var thumb_data = {
+	         Bucket: 'namshop',
+	         Key: data.thumbnail_Filename,
+	         ACL:'public-read',
+	         Body: stdout,
+	         ContentType: mime.lookup(data.thumbnail_Filename)
+	      };
+
+	      s3.upload(thumb_data, function(err, doc){
+	        if(err){
+	           return callback(err);
+	        } else {
+	           //console.log('썸네일=',doc.Location);
+	           data.photo_thumbnail_url = doc.Location;
+	           console.log('썸네일=',data.photo_thumbnail_url);
+	           return callback(null, data);
+	        }
+	      });
+	});
+};
+
+function updatePhotoUrl(data, callback){
+	Reservation.findOneAndUpdate({res_no:data.res_no}, { $set : {"review.photo_url": data.photo_url, "review.photo_thumbnail_url": data.photo_thumbnail_url}}, function(err, doc){
+		if(err){
+			return callback(err);
+		}
+		if(doc){
+			console.log('썸네일=',data);
+			return callback(null, doc);
+		}
+	});
+};
 
 //14. 지가 작성한 리뷰 보기 아오 하기싫어
 router.get('/:user_no/res_list/:res_no/read_rev', function(req, res, next){
