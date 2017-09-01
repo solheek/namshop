@@ -279,9 +279,9 @@ router.post('/shoplists/:shop_no/reservate', function(req, res, next){
 });
 
 //16.관심샵 등록/삭제
-router.post('/shoplists/:shop_no/favorite/:user_no', function(req, res, next){
+router.post('/shoplists/:shop_no/favorite', function(req, res, next){
    var shop_no = req.params.shop_no;
-   var user_no = req.params.user_no;
+   var user_no = req.query.user_no;
 
    User.findOne({user_no:user_no}, function(err, doc){
       if(err) res.json({success_code: 0});
